@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const Polaris());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class Polaris extends StatelessWidget {
+  const Polaris({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Polaris',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -30,13 +30,13 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const PolarisHomePage(title: 'Polaris'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class PolarisHomePage extends StatefulWidget {
+  const PolarisHomePage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -50,10 +50,10 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<PolarisHomePage> createState() => _PolarisHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _PolarisHomePageState extends State<PolarisHomePage> {
   int _counter = 0;
 
   void _incrementCounter() {
@@ -81,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
         // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
+        // Here we take the value from the PolarisHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),

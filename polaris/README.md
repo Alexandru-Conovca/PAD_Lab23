@@ -1,6 +1,6 @@
-# polaris
+# Polaris
 
-A new Flutter project.
+Polaris is a Flutter astronomy companion for planning and recording observations.
 
 ## Getting Started
 
