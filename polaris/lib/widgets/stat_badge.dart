@@ -16,7 +16,11 @@ class StatBadge extends StatelessWidget {
         color: badgeColor.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: badgeColor, fontWeight: FontWeight.w700)),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium
+            ?.copyWith(color: badgeColor, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }

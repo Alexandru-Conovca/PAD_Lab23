@@ -32,11 +32,7 @@ final router = GoRouter(
     GoRoute(
       path: '/catalog',
       builder: (context, state) {
-        return CatalogScreen(
-          onObjectTap: (object) {
-            context.push('/objects/${object.id}');
-          },
-        );
+        return const CatalogScreen();
       },
     ),
     GoRoute(
@@ -44,9 +40,7 @@ final router = GoRouter(
       builder: (context, state) {
         final id = state.pathParameters['id']!;
 
-        final object = celestialObjects.firstWhere((item) => item.id == id);
-
-        return ObjectDetailScreen(object: object);
+        return ObjectDetailScreen(id: id);
       },
     ),
     GoRoute(
