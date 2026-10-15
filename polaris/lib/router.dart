@@ -14,6 +14,8 @@ import 'screens/statistics_screen.dart';
 import 'screens/telescope_screen.dart';
 import 'screens/verification_screen.dart';
 
+import 'widgets/app_shell.dart';
+
 final router = GoRouter(
   initialLocation: '/login',
   routes: [
@@ -23,73 +25,104 @@ final router = GoRouter(
         return AuthScreen(onLogin: () => context.go('/'));
       },
     ),
-    GoRoute(
-      path: '/',
-      builder: (context, state) {
-        return HomeScreen(onQuest: () => context.go('/quests'));
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return AppShell(navigationShell: navigationShell);
       },
-    ),
-    GoRoute(
-      path: '/catalog',
-      builder: (context, state) {
-        return const CatalogScreen();
-      },
-    ),
-    GoRoute(
-      path: '/objects/:id',
-      builder: (context, state) {
-        final id = state.pathParameters['id']!;
+      branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) {
+                return HomeScreen(onQuest: () => context.go('/quests'));
+              },
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/catalog',
+              builder: (context, state) {
+                return const CatalogScreen();
+              },
+              routes: [
+                GoRoute(
+                  path: 'objects/:id',
+                  builder: (context, state) {
+                    final id = state.pathParameters['id']!;
 
-        return ObjectDetailScreen(id: id);
-      },
-    ),
-    GoRoute(
-      path: '/quests',
-      builder: (context, state) {
-        return QuestScreen(quest: quests[1]);
-      },
-    ),
-    GoRoute(
-      path: '/star-map',
-      builder: (context, state) {
-        return const StarMapScreen();
-      },
-    ),
-    GoRoute(
-      path: '/profile',
-      builder: (context, state) {
-        return const ProfileScreen();
-      },
-    ),
-    GoRoute(
-      path: '/history',
-      builder: (context, state) {
-        return const HistoryScreen();
-      },
-    ),
-    GoRoute(
-      path: '/favorites',
-      builder: (context, state) {
-        return const FavoritesScreen();
-      },
-    ),
-    GoRoute(
-      path: '/statistics',
-      builder: (context, state) {
-        return const StatisticsScreen();
-      },
-    ),
-    GoRoute(
-      path: '/telescope',
-      builder: (context, state) {
-        return const TelescopeScreen();
-      },
-    ),
-    GoRoute(
-      path: '/verification',
-      builder: (context, state) {
-        return const VerificationScreen();
-      },
+                    return ObjectDetailScreen(id: id);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/quests',
+              builder: (context, state) {
+                return QuestScreen(quest: quests[1]);
+              },
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/star-map',
+              builder: (context, state) {
+                return const StarMapScreen();
+              },
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) {
+                return const ProfileScreen();
+              },
+              routes: [
+                GoRoute(
+                  path: 'history',
+                  builder: (context, state) {
+                    return const HistoryScreen();
+                  },
+                ),
+                GoRoute(
+                  path: 'favorites',
+                  builder: (context, state) {
+                    return const FavoritesScreen();
+                  },
+                ),
+                GoRoute(
+                  path: 'statistics',
+                  builder: (context, state) {
+                    return const StatisticsScreen();
+                  },
+                ),
+                GoRoute(
+                  path: 'telescope',
+                  builder: (context, state) {
+                    return const TelescopeScreen();
+                  },
+                ),
+                GoRoute(
+                  path: 'verification',
+                  builder: (context, state) {
+                    return const VerificationScreen();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     ),
   ],
 );

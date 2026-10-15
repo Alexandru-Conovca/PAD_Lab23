@@ -17,7 +17,7 @@ class CatalogScreen extends StatelessWidget {
             (object) => CelestialObjectCard(
               object: object,
               onTap: () {
-                context.push('/objects/${object.id}');
+                context.push('/catalog/objects/${object.id}');
               },
             ),
           ),
