@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({
-    super.key,
-    required this.onLogin,
-  });
+  const AuthScreen({super.key, required this.onLogin});
 
   final VoidCallback onLogin;
 
@@ -31,11 +28,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Вход выполнен: ${_loginController.text.trim()}',
-        ),
-      ),
+      SnackBar(content: Text('Вход выполнен: ${_loginController.text.trim()}')),
     );
 
     widget.onLogin();
@@ -57,27 +50,17 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.nights_stay,
-                      size: 54,
-                      color: scheme.primary,
-                    ),
+                    Icon(Icons.nights_stay, size: 54, color: scheme.primary),
                     const SizedBox(height: 24),
                     Text(
                       'Welcome to Polaris',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium,
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Your calm, curious companion for every clear night.',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
+                      style: Theme.of(context).textTheme.bodyLarge
+                          ?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 36),
                     TextFormField(
@@ -89,8 +72,14 @@ class _AuthScreenState extends State<AuthScreen> {
                         prefixIcon: Icon(Icons.person_outline),
                       ),
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Введите email или имя пользователя';
+                        final email = value?.trim() ?? '';
+
+                        if (email.isEmpty) {
+                          return 'Введите email';
+                        }
+
+                        if (!email.contains('@')) {
+                          return 'Введите корректный email';
                         }
 
                         return null;
@@ -129,9 +118,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     Center(
                       child: TextButton(
                         onPressed: () {},
-                        child: const Text(
-                          'Нет аккаунта? Зарегистрируйтесь',
-                        ),
+                        child: const Text('Нет аккаунта? Зарегистрируйтесь'),
                       ),
                     ),
                   ],
