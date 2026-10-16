@@ -80,7 +80,15 @@ class ObjectDetailScreen extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${object.name} добавлен в избранное',
+                        ),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.bookmark_border),
                   label: const Text('В избранное'),
                 ),
