@@ -1,8 +1,40 @@
 import 'package:flutter/material.dart';
-
+import 'package:go_router/go_router.dart';
 import '../data/mock_data.dart';
 import '../widgets/observation_tile.dart';
 import '../widgets/quest_card.dart';
+
+Future<void> _logout(BuildContext context) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (dialogCtx) {
+      return AlertDialog(
+        title: const Text('Выйти из аккаунта?'),
+        content: const Text(
+          'Вы действительно хотите завершить текущую сессию?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx, false);
+            },
+            child: const Text('Нет'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx, true);
+            },
+            child: const Text('Да, выйти'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (ok == true && context.mounted) {
+    context.go('/login');
+  }
+}
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -15,8 +47,9 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('Your profile'),
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Выйти из аккаунта',
+            onPressed: () => _logout(context),
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),
