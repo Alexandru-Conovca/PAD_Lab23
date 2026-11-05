@@ -9,15 +9,29 @@ class CelestialObjectsModel extends ChangeNotifier {
 
   final CelestialObjectRepository _repository;
 
-  List<CelestialObject> _items = [];
-  bool isLoading = false;
-  String? errorMessage;
+  bool _isLoading = false;
+  String? _errorMessage;
+  List<CelestialObject> _items = const [];
+
+  bool get isLoading => _isLoading;
+
+  String? get errorMessage => _errorMessage;
 
   List<CelestialObject> get items => List.unmodifiable(_items);
 
+  CelestialObject? byId(String id) {
+    for (final object in _items) {
+      if (object.id == id) {
+        return object;
+      }
+    }
+
+    return null;
+  }
+
   Future<void> load() async {
-    isLoading = true;
-    errorMessage = null;
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     final result = await _repository.fetchAll();
@@ -25,14 +39,10 @@ class CelestialObjectsModel extends ChangeNotifier {
       case Ok(value: final objects):
         _items = objects;
       case Err(msg: final message):
-        errorMessage = message;
+        _errorMessage = message;
     }
 
-    isLoading = false;
+    _isLoading = false;
     notifyListeners();
-  }
-
-  Future<Result<CelestialObject>> fetchById(String id) {
-    return _repository.fetchById(id);
   }
 }

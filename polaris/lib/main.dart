@@ -8,7 +8,20 @@ import 'models/favorites_model.dart';
 import 'router.dart';
 
 void main() {
-  runApp(const Polaris());
+  final repository = MockCelestialObjectRepository();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<CelestialObjectRepository>.value(value: repository),
+        ChangeNotifierProvider(
+          create: (_) => CelestialObjectsModel(repository)..load(),
+        ),
+        ChangeNotifierProvider(create: (_) => FavoritesModel()),
+      ],
+      child: const Polaris(),
+    ),
+  );
 }
 
 class Polaris extends StatelessWidget {
@@ -16,23 +29,10 @@ class Polaris extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<CelestialObjectRepository>(
-          create: (_) => MockCelestialObjectRepository(),
-        ),
-        ChangeNotifierProvider(
-          create: (context) =>
-              CelestialObjectsModel(context.read<CelestialObjectRepository>())
-                ..load(),
-        ),
-        ChangeNotifierProvider(create: (_) => FavoritesModel()),
-      ],
-      child: MaterialApp.router(
-        title: 'Polaris',
-        theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
-        routerConfig: router,
-      ),
+    return MaterialApp.router(
+      title: 'Polaris',
+      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
+      routerConfig: router,
     );
   }
 }
