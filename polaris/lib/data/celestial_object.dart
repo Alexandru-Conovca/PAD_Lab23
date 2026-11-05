@@ -21,14 +21,23 @@ class CelestialObject {
   final String constellation;
   final bool isVisibleNow;
 
-  CelestialObject copyWith({String? id}) => CelestialObject(
+  CelestialObject copyWith({
+    String? id,
+    String? name,
+    CelestialType? type,
+    String? description,
+    double? magnitude,
+    String? coordinates,
+    String? constellation,
+    bool? isVisibleNow,
+  }) => CelestialObject(
     id: id ?? this.id,
-    name: name,
-    type: type,
-    description: description,
-    magnitude: magnitude,
-    coordinates: coordinates,
-    constellation: constellation,
-    isVisibleNow: isVisibleNow,
+    name: name ?? this.name,
+    type: type ?? this.type,
+    description: description ?? this.description,
+    magnitude: magnitude ?? this.magnitude,
+    coordinates: coordinates ?? this.coordinates,
+    constellation: constellation ?? this.constellation,
+    isVisibleNow: isVisibleNow ?? this.isVisibleNow,
   );
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../data/celestial_object.dart';
-import '../models/domain_models.dart';
 import '../models/celestial_objects_model.dart';
+import '../models/domain_models.dart';
 import '../models/favorites_model.dart';
 import '../widgets/error_view.dart';
 import '../widgets/stat_badge.dart';
@@ -33,9 +34,7 @@ class ObjectDetailScreen extends StatelessWidget {
     }
 
     if (object == null) {
-      return const Scaffold(
-        body: Center(child: Text('Запись не существует')),
-      );
+      return const Scaffold(body: Center(child: Text('Запись не существует')));
     }
 
     return _ObjectDetails(object: object);
@@ -54,7 +53,21 @@ class _ObjectDetails extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(object.name)),
+      appBar: AppBar(
+        title: Text(object.name),
+        actions: [
+          IconButton(
+            onPressed: () => _editObject(context, object),
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Изменить',
+          ),
+          IconButton(
+            onPressed: () => _deleteObject(context, object),
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Удалить',
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -144,6 +157,89 @@ class _ObjectDetails extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _editObject(BuildContext context, CelestialObject object) async {
+    final controller = TextEditingController(text: object.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Изменить объект'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Название'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Сохранить'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    if (name == null || name.isEmpty || !context.mounted) {
+      return;
+    }
+
+    final error = await context.read<CelestialObjectsModel>().update(
+      object.copyWith(name: name),
+    );
+    if (!context.mounted) {
+      return;
+    }
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    context.read<FavoritesModel>().update(object.copyWith(name: name));
+  }
+
+  Future<void> _deleteObject(
+    BuildContext context,
+    CelestialObject object,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Удалить объект?'),
+        content: Text('Удалить ${object.name} из каталога?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final error = await context.read<CelestialObjectsModel>().remove(object.id);
+    if (!context.mounted) {
+      return;
+    }
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+
+    context.read<FavoritesModel>().remove(object);
+    context.pop();
   }
 }
 

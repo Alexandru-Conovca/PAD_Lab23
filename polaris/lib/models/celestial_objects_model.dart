@@ -45,4 +45,40 @@ class CelestialObjectsModel extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  Future<String?> add(CelestialObject draft) async {
+    switch (await _repository.create(draft)) {
+      case Ok(value: final object):
+        _items = [..._items, object];
+        notifyListeners();
+        return null;
+      case Err(msg: final message):
+        return message;
+    }
+  }
+
+  Future<String?> remove(String id) async {
+    switch (await _repository.delete(id)) {
+      case Ok():
+        _items = _items.where((object) => object.id != id).toList();
+        notifyListeners();
+        return null;
+      case Err(msg: final message):
+        return message;
+    }
+  }
+
+  Future<String?> update(CelestialObject object) async {
+    switch (await _repository.update(object)) {
+      case Ok(value: final updated):
+        _items = [
+          for (final item in _items)
+            if (item.id == updated.id) updated else item,
+        ];
+        notifyListeners();
+        return null;
+      case Err(msg: final message):
+        return message;
+    }
+  }
 }

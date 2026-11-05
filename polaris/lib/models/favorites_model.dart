@@ -28,6 +28,16 @@ class FavoritesModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void update(CelestialObject object) {
+    final index = _items.indexWhere((item) => item.id == object.id);
+    if (index == -1) {
+      return;
+    }
+
+    _items[index] = object;
+    notifyListeners();
+  }
+
   void toggle(CelestialObject object) {
     if (_items.contains(object)) {
       _items.remove(object);
