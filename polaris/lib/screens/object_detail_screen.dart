@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/celestial_object.dart';
-import '../data/result.dart';
 import '../models/domain_models.dart';
 import '../models/celestial_objects_model.dart';
 import '../models/favorites_model.dart';
+import '../widgets/error_view.dart';
 import '../widgets/stat_badge.dart';
 
 class ObjectDetailScreen extends StatelessWidget {
@@ -15,24 +15,30 @@ class ObjectDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Result<CelestialObject>>(
-      future: context.read<CelestialObjectsModel>().fetchById(id),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    final model = context.watch<CelestialObjectsModel>();
+    final object = model.byId(id);
 
-        return switch (snapshot.data!) {
-          Ok(value: final object) => _ObjectDetails(object: object),
-          Err(msg: final message) => Scaffold(
-            appBar: AppBar(title: const Text('Object')),
-            body: Center(child: Text(message)),
-          ),
-        };
-      },
-    );
+    if (model.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (model.errorMessage case final message?) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Object')),
+        body: ErrorView(
+          message: message,
+          onRetry: () => context.read<CelestialObjectsModel>().load(),
+        ),
+      );
+    }
+
+    if (object == null) {
+      return const Scaffold(
+        body: Center(child: Text('Запись не существует')),
+      );
+    }
+
+    return _ObjectDetails(object: object);
   }
 }
 
