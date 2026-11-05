@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/celestial_objects_model.dart';
 import '../widgets/celestial_object_card.dart';
+import '../widgets/error_view.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.onQuest});
@@ -94,7 +95,10 @@ class HomeScreen extends StatelessWidget {
             child: switch ((catalog.isLoading, catalog.errorMessage)) {
               (true, _) => const Center(child: CircularProgressIndicator()),
               (false, final String? errorMessage) when errorMessage != null =>
-                Center(child: Text(errorMessage)),
+                ErrorView(
+                  message: errorMessage,
+                  onRetry: () => context.read<CelestialObjectsModel>().load(),
+                ),
               _ => ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: catalog.items.length,
