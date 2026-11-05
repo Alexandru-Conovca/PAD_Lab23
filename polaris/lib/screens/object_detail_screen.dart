@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/celestial_object.dart';
+import '../data/result.dart';
 import '../models/domain_models.dart';
+import '../models/celestial_objects_model.dart';
 import '../models/favorites_model.dart';
 import '../widgets/stat_badge.dart';
-import '../data/mock_data.dart';
 
 class ObjectDetailScreen extends StatelessWidget {
   const ObjectDetailScreen({super.key, required this.id});
@@ -13,11 +15,38 @@ class ObjectDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final object = celestialObjects.firstWhere((item) => item.id == id);
+    return FutureBuilder<Result<CelestialObject>>(
+      future: context.read<CelestialObjectsModel>().fetchById(id),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return switch (snapshot.data!) {
+          Ok(value: final object) => _ObjectDetails(object: object),
+          Err(msg: final message) => Scaffold(
+            appBar: AppBar(title: const Text('Object')),
+            body: Center(child: Text(message)),
+          ),
+        };
+      },
+    );
+  }
+}
+
+class _ObjectDetails extends StatelessWidget {
+  const _ObjectDetails({required this.object});
+
+  final CelestialObject object;
+
+  @override
+  Widget build(BuildContext context) {
     final favorites = context.watch<FavoritesModel>();
     final isFavorite = favorites.contains(object);
-
     final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: Text(object.name)),
       body: ListView(

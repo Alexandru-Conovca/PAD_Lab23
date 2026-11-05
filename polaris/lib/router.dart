@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
 
-import 'data/mock_data.dart';
+import 'data/app_data.dart';
 import 'screens/auth_screen.dart';
 import 'screens/catalog_screen.dart';
 import 'screens/favorites_screen.dart';

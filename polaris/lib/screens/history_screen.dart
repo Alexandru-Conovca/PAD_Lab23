@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
+import '../data/app_data.dart';
 import '../widgets/observation_tile.dart';
 
 class HistoryScreen extends StatelessWidget {

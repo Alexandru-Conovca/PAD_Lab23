@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../data/mock_data.dart';
+
+import '../data/app_data.dart';
 import '../widgets/observation_tile.dart';
 import '../widgets/quest_card.dart';
 

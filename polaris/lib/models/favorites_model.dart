@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import 'domain_models.dart';
+import '../data/celestial_object.dart';
 
 class FavoritesModel extends ChangeNotifier {
   final List<CelestialObject> _items = [];

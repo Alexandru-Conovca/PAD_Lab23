@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
+import '../models/celestial_objects_model.dart';
 import '../widgets/celestial_object_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -10,6 +11,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final catalog = context.watch<CelestialObjectsModel>();
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
@@ -89,15 +91,20 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 8),
           SizedBox(
             height: 170,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: 6,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (_, index) => SizedBox(
-                width: 260,
-                child: CelestialObjectCard(object: celestialObjects[index]),
+            child: switch ((catalog.isLoading, catalog.errorMessage)) {
+              (true, _) => const Center(child: CircularProgressIndicator()),
+              (false, final String? errorMessage) when errorMessage != null =>
+                Center(child: Text(errorMessage)),
+              _ => ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: catalog.items.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (_, index) => SizedBox(
+                  width: 260,
+                  child: CelestialObjectCard(object: catalog.items[index]),
+                ),
               ),
-            ),
+            },
           ),
           const SizedBox(height: 28),
           Card(

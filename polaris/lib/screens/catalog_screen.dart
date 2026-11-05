@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
+import '../models/celestial_objects_model.dart';
 import '../models/favorites_model.dart';
 import '../widgets/celestial_object_card.dart';
 
@@ -11,6 +11,8 @@ class CatalogScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final catalog = context.watch<CelestialObjectsModel>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sky catalogue'),
@@ -29,18 +31,34 @@ class CatalogScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        children: [
-          ...celestialObjects.map(
-            (object) => CelestialObjectCard(
-              object: object,
-              onTap: () {
-                context.push('/catalog/objects/${object.id}');
-              },
-            ),
+      body: switch ((catalog.isLoading, catalog.errorMessage)) {
+        (true, _) => const Center(child: CircularProgressIndicator()),
+        (false, final String? errorMessage) when errorMessage != null => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(errorMessage),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => context.read<CelestialObjectsModel>().load(),
+                child: const Text('Повторить'),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        _ => ListView(
+          children: [
+            ...catalog.items.map(
+              (object) => CelestialObjectCard(
+                object: object,
+                onTap: () {
+                  context.push('/catalog/objects/${object.id}');
+                },
+              ),
+            ),
+          ],
+        ),
+      },
     );
   }
 }

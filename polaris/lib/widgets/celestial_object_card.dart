@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/celestial_object.dart';
 import '../models/domain_models.dart';
 import 'stat_badge.dart';
 

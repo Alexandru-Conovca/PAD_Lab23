@@ -10,28 +10,6 @@ class User {
   final String level;
 }
 
-class CelestialObject {
-  const CelestialObject({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.description,
-    required this.magnitude,
-    required this.coordinates,
-    required this.constellation,
-    required this.isVisibleNow,
-  });
-
-  final String id;
-  final String name;
-  final CelestialType type;
-  final String description;
-  final double magnitude;
-  final String coordinates;
-  final String constellation;
-  final bool isVisibleNow;
-}
-
 class Quest {
   const Quest({
     required this.id,

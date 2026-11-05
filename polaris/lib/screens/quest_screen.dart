@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
+import '../data/app_data.dart';
 import '../models/domain_models.dart';
 import '../widgets/quest_card.dart';
 import '../widgets/stat_badge.dart';
