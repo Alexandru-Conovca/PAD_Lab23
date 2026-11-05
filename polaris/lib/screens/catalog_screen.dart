@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/celestial_objects_model.dart';
 import '../models/favorites_model.dart';
 import '../widgets/celestial_object_card.dart';
+import '../widgets/error_view.dart';
 
 class CatalogScreen extends StatelessWidget {
   const CatalogScreen({super.key});
@@ -34,16 +35,9 @@ class CatalogScreen extends StatelessWidget {
       body: switch ((catalog.isLoading, catalog.errorMessage)) {
         (true, _) => const Center(child: CircularProgressIndicator()),
         (false, final String? errorMessage) when errorMessage != null => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(errorMessage),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => context.read<CelestialObjectsModel>().load(),
-                child: const Text('Повторить'),
-              ),
-            ],
+          child: ErrorView(
+            message: errorMessage,
+            onRetry: () => context.read<CelestialObjectsModel>().load(),
           ),
         ),
         _ => ListView(
