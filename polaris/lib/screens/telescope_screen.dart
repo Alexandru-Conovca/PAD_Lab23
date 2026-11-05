@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../data/app_data.dart';
+import '../models/telescope_model.dart';
 
 class TelescopeScreen extends StatefulWidget {
   const TelescopeScreen({super.key});
@@ -26,23 +27,43 @@ class _TelescopeScreenState extends State<TelescopeScreen> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Сохранено: ${_apertureController.text.trim()} мм'),
+    final telescope = context.read<TelescopeModel>().telescope;
+    if (telescope == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось загрузить телескоп')),
+      );
+      return;
+    }
+
+    final error = await context.read<TelescopeModel>().update(
+      telescope.copyWith(
+        aperture: int.parse(_apertureController.text.trim()),
+        focalLength: int.parse(_focalLengthController.text.trim()),
+        mountType: _mountController.text.trim(),
       ),
     );
+    if (!mounted) return;
+
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
 
     context.pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final telescope = telescopes.first;
+    final telescope = context.watch<TelescopeModel>().telescope;
+    if (telescope == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final ratio = telescope.focalLength / telescope.aperture;
     final scheme = Theme.of(context).colorScheme;
 
