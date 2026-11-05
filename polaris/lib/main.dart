@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'models/favorites_model.dart';
 import 'router.dart';
 
 void main() {
@@ -11,10 +13,13 @@ class Polaris extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Polaris',
-      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
-      routerConfig: router,
+    return ChangeNotifierProvider(
+      create: (_) => FavoritesModel(),
+      child: MaterialApp.router(
+        title: 'Polaris',
+        theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
+        routerConfig: router,
+      ),
     );
   }
 }

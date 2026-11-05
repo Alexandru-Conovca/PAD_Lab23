@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/domain_models.dart';
+import '../models/favorites_model.dart';
 import '../widgets/stat_badge.dart';
 import '../data/mock_data.dart';
 
@@ -12,6 +14,8 @@ class ObjectDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final object = celestialObjects.firstWhere((item) => item.id == id);
+    final favorites = context.watch<FavoritesModel>();
+    final isFavorite = favorites.contains(object);
 
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
@@ -81,16 +85,23 @@ class ObjectDetailScreen extends StatelessWidget {
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () {
+                    context.read<FavoritesModel>().toggle(object);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          '${object.name} добавлен в избранное',
+                          isFavorite
+                              ? '${object.name} удалён из избранного'
+                              : '${object.name} добавлен в избранное',
                         ),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.bookmark_border),
-                  label: const Text('В избранное'),
+                  icon: Icon(
+                    isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                  ),
+                  label: Text(
+                    isFavorite ? 'Удалить из избранного' : 'В избранное',
+                  ),
                 ),
               ),
             ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
+import '../models/favorites_model.dart';
 import '../widgets/celestial_object_card.dart';
 
 class FavoritesScreen extends StatelessWidget {
@@ -9,12 +10,20 @@ class FavoritesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Favorites')),
-    body: ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: 6,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, index) =>
-          CelestialObjectCard(object: celestialObjects[index + 2]),
+    body: Consumer<FavoritesModel>(
+      builder: (context, favorites, child) {
+        if (favorites.items.isEmpty) {
+          return const Center(child: Text('No favorite objects yet.'));
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: favorites.items.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (_, index) =>
+              CelestialObjectCard(object: favorites.items[index]),
+        );
+      },
     ),
   );
 }
