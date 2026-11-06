@@ -21,6 +21,11 @@ class CatalogScreen extends StatelessWidget {
         title: const Text('Sky catalogue'),
         actions: [
           IconButton(
+            onPressed: () => context.read<CelestialObjectsModel>().load(),
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Обновить каталог',
+          ),
+          IconButton(
             onPressed: () => _showCreateDialog(context),
             icon: const Icon(Icons.add),
             tooltip: 'Add object',

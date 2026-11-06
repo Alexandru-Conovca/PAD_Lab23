@@ -61,15 +61,12 @@ class Telescope {
   final int focalLength;
   final String mountType;
 
-  Telescope copyWith({
-    int? aperture,
-    int? focalLength,
-    String? mountType,
-  }) => Telescope(
-    id: id,
-    name: name,
-    aperture: aperture ?? this.aperture,
-    focalLength: focalLength ?? this.focalLength,
-    mountType: mountType ?? this.mountType,
-  );
+  Telescope copyWith({int? aperture, int? focalLength, String? mountType}) =>
+      Telescope(
+        id: id,
+        name: name,
+        aperture: aperture ?? this.aperture,
+        focalLength: focalLength ?? this.focalLength,
+        mountType: mountType ?? this.mountType,
+      );
 }

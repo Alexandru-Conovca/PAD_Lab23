@@ -119,6 +119,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Настройки телескопа'),
+              subtitle: const Text(
+                'Аппертурa, фокусное расстояние и монтировка',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/profile/telescope'),
+            ),
+          ),
+          const SizedBox(height: 12),
           Text('Current quest', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 10),
           QuestCard(quest: quests[1]),
