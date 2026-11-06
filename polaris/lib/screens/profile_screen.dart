@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../data/app_data.dart';
+import '../data/mock_celestial_object_repository.dart';
 import '../widgets/observation_tile.dart';
 import '../widgets/quest_card.dart';
 
@@ -37,8 +39,15 @@ Future<void> _logout(BuildContext context) async {
   }
 }
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _simulateNetworkError = false;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +103,22 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 28),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Симулировать сбой сети'),
+            subtitle: const Text(
+              'Включите, чтобы проверить экран ошибки и повторную загрузку.',
+            ),
+            value: _simulateNetworkError,
+            onChanged: (value) {
+              setState(() {
+                _simulateNetworkError = value;
+              });
+              context.read<MockCelestialObjectRepository>().simulateError =
+                  value;
+            },
+          ),
+          const SizedBox(height: 12),
           Text('Current quest', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 10),
           QuestCard(quest: quests[1]),

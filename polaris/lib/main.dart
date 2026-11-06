@@ -16,17 +16,15 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
+        Provider<MockCelestialObjectRepository>.value(value: repository),
         Provider<CelestialObjectRepository>.value(value: repository),
-        Provider<TelescopeRepository>(
-          create: (_) => MockTelescopeRepository(),
-        ),
+        Provider<TelescopeRepository>(create: (_) => MockTelescopeRepository()),
         ChangeNotifierProvider(
           create: (_) => CelestialObjectsModel(repository)..load(),
         ),
         ChangeNotifierProvider(
           create: (context) =>
-              TelescopeModel(context.read<TelescopeRepository>())
-                ..load('sw'),
+              TelescopeModel(context.read<TelescopeRepository>())..load('sw'),
         ),
         ChangeNotifierProvider(create: (_) => FavoritesModel()),
       ],
