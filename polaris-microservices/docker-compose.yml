@@ -1,0 +1,297 @@
+services:
+  # ---------------------------------------------------------------------------
+  # API Gateway & Reverse Proxy
+  # ---------------------------------------------------------------------------
+  gateway:
+    image: traefik:v3.6.4
+    container_name: polaris-gateway
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "8080:80"     # API Gateway Entrypoint
+      - "8088:8080"   # Traefik Web Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./gateway/traefik.yml:/etc/traefik/traefik.yml:ro"
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: polaris-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: RabbitMQ Message Broker
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: polaris-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"     # AMQP protocol
+      - "15672:15672"   # RabbitMQ Management Web UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # 1. Auth Service
+  # ---------------------------------------------------------------------------
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: polaris-auth-service
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: auth-service
+      PORT: 8001
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/auth_db
+      JWT_SECRET: ${JWT_SECRET:-super-secret-polaris-key-change-in-production-2026}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.services.auth.loadbalancer.server.port=8001"
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # 2. Catalog Service
+  # ---------------------------------------------------------------------------
+  catalog-service:
+    build:
+      context: ./services/catalog-service
+      dockerfile: Dockerfile
+    container_name: polaris-catalog-service
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: catalog-service
+      PORT: 8002
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/catalog_db
+      JWT_SECRET: ${JWT_SECRET:-super-secret-polaris-key-change-in-production-2026}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.catalog.rule=PathPrefix(`/api/catalog`)"
+      - "traefik.http.routers.catalog.entrypoints=web"
+      - "traefik.http.services.catalog.loadbalancer.server.port=8002"
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # 3. Equipment Service
+  # ---------------------------------------------------------------------------
+  equipment-service:
+    build:
+      context: ./services/equipment-service
+      dockerfile: Dockerfile
+    container_name: polaris-equipment-service
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: equipment-service
+      PORT: 8003
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/equipment_db
+      JWT_SECRET: ${JWT_SECRET:-super-secret-polaris-key-change-in-production-2026}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.equipment.rule=PathPrefix(`/api/equipment`)"
+      - "traefik.http.routers.equipment.entrypoints=web"
+      - "traefik.http.services.equipment.loadbalancer.server.port=8003"
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # 4. Observation Service
+  # ---------------------------------------------------------------------------
+  observation-service:
+    build:
+      context: ./services/observation-service
+      dockerfile: Dockerfile
+    container_name: polaris-observation-service
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: observation-service
+      PORT: 8004
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/observation_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-polaris-key-change-in-production-2026}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.observation.rule=PathPrefix(`/api/observations`)"
+      - "traefik.http.routers.observation.entrypoints=web"
+      - "traefik.http.services.observation.loadbalancer.server.port=8004"
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # 5. Quest Service
+  # ---------------------------------------------------------------------------
+  quest-service:
+    build:
+      context: ./services/quest-service
+      dockerfile: Dockerfile
+    container_name: polaris-quest-service
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: quest-service
+      PORT: 8005
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/quest_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      CATALOG_SERVICE_URL: http://catalog-service:8002
+      JWT_SECRET: ${JWT_SECRET:-super-secret-polaris-key-change-in-production-2026}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.quest.rule=PathPrefix(`/api/quests`)"
+      - "traefik.http.routers.quest.entrypoints=web"
+      - "traefik.http.services.quest.loadbalancer.server.port=8005"
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # 6. Verification Service
+  # ---------------------------------------------------------------------------
+  verification-service:
+    build:
+      context: ./services/verification-service
+      dockerfile: Dockerfile
+    container_name: polaris-verification-service
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: verification-service
+      PORT: 8006
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/verification_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      CATALOG_SERVICE_URL: http://catalog-service:8002
+      WEATHER_SERVICE_URL: http://weather-service:8007
+      JWT_SECRET: ${JWT_SECRET:-super-secret-polaris-key-change-in-production-2026}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8006:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.verification.rule=PathPrefix(`/api/verification`)"
+      - "traefik.http.routers.verification.entrypoints=web"
+      - "traefik.http.services.verification.loadbalancer.server.port=8006"
+    networks:
+      - polaris_network
+
+  # ---------------------------------------------------------------------------
+  # 7. Weather Service
+  # ---------------------------------------------------------------------------
+  weather-service:
+    build:
+      context: ./services/weather-service
+      dockerfile: Dockerfile
+    container_name: polaris-weather-service
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: weather-service
+      PORT: 8007
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/weather_db
+      OPEN_METEO_API_URL: https://api.open-meteo.com/v1/forecast
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8007:8007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.weather.rule=PathPrefix(`/api/weather`)"
+      - "traefik.http.routers.weather.entrypoints=web"
+      - "traefik.http.services.weather.loadbalancer.server.port=8007"
+    networks:
+      - polaris_network
+
+networks:
+  polaris_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  rabbitmq_data:

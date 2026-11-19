@@ -1,0 +1,29 @@
+# Environments
+.env
+.env.local
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Databases & local data
+*.db
+*.sqlite3
+postgres_data/
+rabbitmq_data/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Coverage & Tests
+.pytest_cache/
+.coverage
+htmlcov/

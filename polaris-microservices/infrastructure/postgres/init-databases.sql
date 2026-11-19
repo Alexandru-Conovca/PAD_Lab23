@@ -1,0 +1,23 @@
+-- PostgreSQL Database Initialization Script for Polaris Microservices
+-- Creates individual databases for Database-per-Service pattern
+
+SELECT 'CREATE DATABASE auth_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'auth_db')\gexec
+
+SELECT 'CREATE DATABASE catalog_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'catalog_db')\gexec
+
+SELECT 'CREATE DATABASE equipment_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'equipment_db')\gexec
+
+SELECT 'CREATE DATABASE observation_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'observation_db')\gexec
+
+SELECT 'CREATE DATABASE quest_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'quest_db')\gexec
+
+SELECT 'CREATE DATABASE verification_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'verification_db')\gexec
+
+SELECT 'CREATE DATABASE weather_db'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'weather_db')\gexec

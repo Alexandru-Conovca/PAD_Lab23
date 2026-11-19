@@ -2,63 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../data/app_data.dart';
-import '../data/mock_celestial_object_repository.dart';
+import '../models/auth_model.dart';
+import '../models/celestial_objects_model.dart';
+import '../models/domain_models.dart';
+import '../models/observations_model.dart';
+import '../models/quests_model.dart';
 import '../widgets/observation_tile.dart';
 import '../widgets/quest_card.dart';
 
-Future<void> _logout(BuildContext context) async {
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (dialogCtx) {
-      return AlertDialog(
-        title: const Text('Выйти из аккаунта?'),
-        content: const Text(
-          'Вы действительно хотите завершить текущую сессию?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogCtx, false);
-            },
-            child: const Text('Нет'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(dialogCtx, true);
-            },
-            child: const Text('Да, выйти'),
-          ),
-        ],
-      );
-    },
-  );
-
-  if (ok == true && context.mounted) {
-    context.go('/login');
-  }
-}
-
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  bool _simulateNetworkError = false;
-
-  @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthModel>();
+    final quests = context.watch<QuestsModel>();
+    final observations = context.watch<ObservationsModel>();
+    final catalog = context.watch<CelestialObjectsModel>();
+    final user = auth.user;
     final scheme = Theme.of(context).colorScheme;
+    final completedQuests = quests.myQuests
+        .where((quest) => quest.status == 'completed')
+        .length;
+    QuestProgress? activeQuest;
+    for (final quest in quests.myQuests) {
+      if (quest.status == 'in_progress') {
+        activeQuest = quest;
+        break;
+      }
+    }
+    final recent = observations.items.take(2).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your profile'),
         actions: [
           IconButton(
-            tooltip: 'Выйти из аккаунта',
-            onPressed: () => _logout(context),
+            tooltip: 'Sign out',
+            onPressed: () => _confirmLogout(context),
             icon: const Icon(Icons.logout),
           ),
         ],
@@ -72,80 +53,162 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 radius: 32,
                 backgroundColor: scheme.primaryContainer,
                 foregroundColor: scheme.onPrimaryContainer,
-                child: const Text(
-                  'AC',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                child: Text(
+                  _initials(user?.name ?? user?.email ?? '?'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    currentUser.name,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(
-                    currentUser.level,
-                    style: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(color: scheme.onSurfaceVariant),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user?.name ?? 'Astronomer',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    Text(
+                      user?.email ?? '',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
           const SizedBox(height: 24),
           Row(
             children: [
-              _Metric(value: '12', label: 'Quests completed'),
-              _Metric(value: '34', label: 'Objects observed'),
-              _Metric(value: '7', label: 'Level'),
+              _Metric(value: '$completedQuests', label: 'Quests completed'),
+              _Metric(
+                value: '${observations.items.length}',
+                label: 'Objects observed',
+              ),
+              _Metric(value: user?.level ?? 'User', label: 'Level'),
             ],
           ),
           const SizedBox(height: 28),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Симулировать сбой сети'),
-            subtitle: const Text(
-              'Включите, чтобы проверить экран ошибки и повторную загрузку.',
-            ),
-            value: _simulateNetworkError,
-            onChanged: (value) {
-              setState(() {
-                _simulateNetworkError = value;
-              });
-              context.read<MockCelestialObjectRepository>().simulateError =
-                  value;
-            },
-          ),
-          const SizedBox(height: 12),
           Card(
             child: ListTile(
               leading: const Icon(Icons.settings_outlined),
-              title: const Text('Настройки телескопа'),
-              subtitle: const Text(
-                'Аппертурa, фокусное расстояние и монтировка',
-              ),
+              title: const Text('Telescope settings'),
+              subtitle: const Text('Aperture, focal length and mount'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/profile/telescope'),
             ),
           ),
           const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.verified_outlined),
+              title: const Text('Verify observation'),
+              subtitle: const Text('Submit coordinates for automatic check'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/profile/verification'),
+            ),
+          ),
+          const SizedBox(height: 24),
           Text('Current quest', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 10),
-          QuestCard(quest: quests[1]),
+          if (activeQuest != null)
+            QuestCard(
+              quest:
+                  quests.byId(activeQuest.questId) ??
+                  Quest(
+                    id: activeQuest.questId,
+                    title: activeQuest.questTitle,
+                    description: 'Progress: ${activeQuest.progressPercent.toStringAsFixed(0)}%',
+                    difficulty: QuestDifficulty.beginner,
+                    tasksCount: activeQuest.tasks.length,
+                    createdAt: activeQuest.startedAt,
+                  ),
+            )
+          else if (quests.quests.isNotEmpty)
+            QuestCard(quest: quests.quests.first)
+          else
+            const Card(child: ListTile(title: Text('No quests available'))),
           const SizedBox(height: 24),
           Text(
             'Recent activity',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 10),
-          ...observations
-              .take(2)
-              .map((observation) => ObservationTile(observation: observation)),
+          if (recent.isEmpty)
+            const Card(
+              child: ListTile(title: Text('No observations yet')),
+            )
+          else
+            ...recent.map(
+              (observation) => ObservationTile(
+                observation: _withObjectName(observation, catalog),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  String _initials(String value) {
+    final parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
+        .toUpperCase();
+  }
+
+  Observation _withObjectName(
+    Observation observation,
+    CelestialObjectsModel catalog,
+  ) {
+    final objectId = observation.objectId;
+    if (objectId == null) return observation;
+    final object = catalog.byId(objectId);
+    if (object == null) return observation;
+    return Observation(
+      id: observation.id,
+      objectId: observation.objectId,
+      objectName: object.name,
+      dateTime: observation.dateTime,
+      location: observation.location,
+      status: observation.status,
+      questId: observation.questId,
+      questTitle: observation.questTitle,
+      telescopeId: observation.telescopeId,
+      latitude: observation.latitude,
+      longitude: observation.longitude,
+      notes: observation.notes,
+      verificationScore: observation.verificationScore,
+      verificationReason: observation.verificationReason,
+    );
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text('Your local session will be cleared.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await context.read<AuthModel>().logout();
+    }
   }
 }
 
@@ -153,6 +216,7 @@ class _Metric extends StatelessWidget {
   const _Metric({required this.value, required this.label});
   final String value;
   final String label;
+
   @override
   Widget build(BuildContext context) => Expanded(
     child: Column(

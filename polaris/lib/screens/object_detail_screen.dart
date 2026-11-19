@@ -49,25 +49,11 @@ class _ObjectDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final favorites = context.watch<FavoritesModel>();
-    final isFavorite = favorites.contains(object);
+    final isFavorite = favorites.containsId(object.id);
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(object.name),
-        actions: [
-          IconButton(
-            onPressed: () => _editObject(context, object),
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Изменить',
-          ),
-          IconButton(
-            onPressed: () => _deleteObject(context, object),
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Удалить',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(object.name)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -124,7 +110,7 @@ class _ObjectDetails extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => context.go('/quests'),
                   icon: const Icon(Icons.add),
                   label: const Text('Добавить в квест'),
                 ),
@@ -132,14 +118,18 @@ class _ObjectDetails extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {
-                    context.read<FavoritesModel>().toggle(object);
+                  onPressed: () async {
+                    final error = await context
+                        .read<FavoritesModel>()
+                        .toggle(object);
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          isFavorite
-                              ? '${object.name} удалён из избранного'
-                              : '${object.name} добавлен в избранное',
+                          error ??
+                              (isFavorite
+                                  ? '${object.name} удалён из избранного'
+                                  : '${object.name} добавлен в избранное'),
                         ),
                       ),
                     );
@@ -159,88 +149,6 @@ class _ObjectDetails extends StatelessWidget {
     );
   }
 
-  Future<void> _editObject(BuildContext context, CelestialObject object) async {
-    final controller = TextEditingController(text: object.name);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Изменить объект'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Название'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Отмена'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Сохранить'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-
-    if (name == null || name.isEmpty || !context.mounted) {
-      return;
-    }
-
-    final error = await context.read<CelestialObjectsModel>().update(
-      object.copyWith(name: name),
-    );
-    if (!context.mounted) {
-      return;
-    }
-    if (error != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
-      return;
-    }
-    context.read<FavoritesModel>().update(object.copyWith(name: name));
-  }
-
-  Future<void> _deleteObject(
-    BuildContext context,
-    CelestialObject object,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Удалить объект?'),
-        content: Text('Удалить ${object.name} из каталога?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Удалить'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
-
-    final error = await context.read<CelestialObjectsModel>().remove(object.id);
-    if (!context.mounted) {
-      return;
-    }
-    if (error != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
-      return;
-    }
-
-    context.read<FavoritesModel>().remove(object);
-    context.pop();
-  }
 }
 
 class _Parameter extends StatelessWidget {

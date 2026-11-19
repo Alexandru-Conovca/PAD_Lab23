@@ -1,90 +1,125 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../models/celestial_objects_model.dart';
+import '../widgets/celestial_object_card.dart';
 
 class StarMapScreen extends StatelessWidget {
   const StarMapScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final catalog = context.watch<CelestialObjectsModel>();
     final scheme = Theme.of(context).colorScheme;
+    final visible = catalog.items.where((item) => item.isVisibleNow).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Star map'),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.my_location)),
+          IconButton(
+            onPressed: catalog.load,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh catalog',
+          ),
         ],
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(12),
-        child: Container(
-          height: 600,
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: scheme.outlineVariant),
-          ),
-          child: Stack(
-            children: [
-              const Positioned(
-                top: 16,
-                left: 0,
-                right: 0,
-                child: Center(child: Text('N')),
-              ),
-              const Positioned(
-                bottom: 16,
-                left: 0,
-                right: 0,
-                child: Center(child: Text('S')),
-              ),
-              const Positioned(
-                top: 0,
-                bottom: 0,
-                left: 16,
-                child: Center(child: Text('W')),
-              ),
-              const Positioned(
-                top: 0,
-                bottom: 0,
-                right: 16,
-                child: Center(child: Text('E')),
-              ),
-              Center(
-                child: Container(
-                  width: 240,
-                  height: 240,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: scheme.outline, width: 1),
-                  ),
-                  child: CustomPaint(
-                    painter: _StarsPainter(color: scheme.onSurface),
+        children: [
+          Container(
+            height: 420,
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Stack(
+              children: [
+                const Positioned(
+                  top: 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: Text('N')),
+                ),
+                const Positioned(
+                  bottom: 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: Text('S')),
+                ),
+                const Positioned(
+                  top: 0,
+                  bottom: 0,
+                  left: 16,
+                  child: Center(child: Text('W')),
+                ),
+                const Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 16,
+                  child: Center(child: Text('E')),
+                ),
+                Center(
+                  child: Container(
+                    width: 240,
+                    height: 240,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: scheme.outline, width: 1),
+                    ),
+                    child: CustomPaint(
+                      painter: _StarsPainter(color: scheme.onSurface),
+                    ),
                   ),
                 ),
-              ),
-              Positioned(
-                top: 120,
-                left: 72,
-                child: _Tag(label: 'Vega', color: scheme.tertiary),
-              ),
-              Positioned(
-                top: 250,
-                right: 58,
-                child: _Tag(label: 'M31', color: scheme.primary),
-              ),
-              Positioned(
-                bottom: 120,
-                left: 108,
-                child: _Tag(label: 'Cassiopeia', color: scheme.secondary),
-              ),
-              Positioned(
-                top: 46,
-                right: 52,
-                child: Icon(Icons.navigation, color: scheme.tertiary),
-              ),
-              const Positioned(top: 42, right: 44, child: Text('ZENITH')),
-            ],
+                Positioned(
+                  top: 120,
+                  left: 72,
+                  child: _Tag(label: 'Vega', color: scheme.tertiary),
+                ),
+                Positioned(
+                  top: 250,
+                  right: 58,
+                  child: _Tag(label: 'M31', color: scheme.primary),
+                ),
+                Positioned(
+                  bottom: 120,
+                  left: 108,
+                  child: _Tag(label: 'Cassiopeia', color: scheme.secondary),
+                ),
+                Positioned(
+                  top: 46,
+                  right: 52,
+                  child: Icon(Icons.navigation, color: scheme.tertiary),
+                ),
+                const Positioned(top: 42, right: 44, child: Text('ZENITH')),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 20),
+          Text('Visible tonight', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 10),
+          if (catalog.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (catalog.errorMessage != null)
+            Text(catalog.errorMessage!)
+          else if (visible.isEmpty)
+            const Text('No objects are marked visible right now.')
+          else
+            SizedBox(
+              height: 170,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: visible.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (_, index) => SizedBox(
+                  width: 260,
+                  child: CelestialObjectCard(object: visible[index]),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

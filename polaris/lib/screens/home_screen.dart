@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../models/auth_model.dart';
 import '../models/celestial_objects_model.dart';
+import '../models/weather_model.dart';
 import '../widgets/celestial_object_card.dart';
 import '../widgets/error_view.dart';
 
@@ -13,14 +16,28 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CelestialObjectsModel>();
+    final weather = context.watch<WeatherModel>();
+    final auth = context.watch<AuthModel>();
     final scheme = Theme.of(context).colorScheme;
+    final conditions = weather.conditions;
+    final current = weather.current;
+    final temperature = current['temperature'];
+    final humidity = current['relative_humidity'];
+    final visibleObjects = catalog.items
+        .where((object) => object.isVisibleNow)
+        .toList();
+    final recommended = visibleObjects.isEmpty
+        ? catalog.items
+        : visibleObjects;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Good evening, Alexandru'),
+        title: Text('Good evening, ${auth.user?.name ?? 'astronomer'}'),
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_none),
+            onPressed: weather.load,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh weather',
           ),
         ],
       ),
@@ -42,37 +59,47 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Icon(Icons.wb_sunny_outlined, color: scheme.tertiary),
                       const SizedBox(width: 10),
-                      const Text(
-                        'Clear conditions',
-                        style: TextStyle(fontWeight: FontWeight.w700),
+                      Expanded(
+                        child: Text(
+                          conditions == null
+                              ? 'Loading conditions'
+                              : '${conditions.rating} conditions',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
-                      const Spacer(),
-                      Text(
-                        '21:42',
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
+                      if (temperature is num)
+                        Text(
+                          '${temperature.toStringAsFixed(1)}°C',
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    '47.0101° N, 28.8638° E',
+                    '${weather.latitude.toStringAsFixed(4)}° N, '
+                    '${weather.longitude.toStringAsFixed(4)}° E',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Clear Sky\nHumidity 45%',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      Text(
-                        'Seeing\n4 / 5',
-                        textAlign: TextAlign.right,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
+                  if (weather.errorMessage case final message?)
+                    Text(
+                      message,
+                      style: TextStyle(color: scheme.error),
+                    )
+                  else if (conditions != null) ...[
+                    Text(
+                      'Cloud cover ${conditions.cloudCover.toStringAsFixed(0)}%\n'
+                      'Humidity ${humidity is num ? humidity.toStringAsFixed(0) : '--'}%',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Suitability ${(conditions.suitabilityScore * 100).toStringAsFixed(0)}%\n'
+                      '${conditions.summary}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ] else
+                    const LinearProgressIndicator(),
                 ],
               ),
             ),
@@ -86,7 +113,10 @@ class HomeScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              TextButton(onPressed: () {}, child: const Text('View all')),
+              TextButton(
+                onPressed: () => context.go('/catalog'),
+                child: const Text('View all'),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -101,11 +131,11 @@ class HomeScreen extends StatelessWidget {
                 ),
               _ => ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: catalog.items.length,
+                itemCount: recommended.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (_, index) => SizedBox(
                   width: 260,
-                  child: CelestialObjectCard(object: catalog.items[index]),
+                  child: CelestialObjectCard(object: recommended[index]),
                 ),
               ),
             },

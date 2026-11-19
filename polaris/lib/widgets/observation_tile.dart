@@ -8,9 +8,23 @@ class ObservationTile extends StatelessWidget {
 
   final Observation observation;
 
+  String get _statusLabel => switch (observation.status.toUpperCase()) {
+    'VERIFIED' => 'Verified',
+    'REJECTED' => 'Rejected',
+    'PENDING' => 'Pending',
+    _ => observation.status,
+  };
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final status = observation.status.toUpperCase();
+    final color = status == 'VERIFIED'
+        ? scheme.tertiary
+        : status == 'REJECTED'
+        ? scheme.error
+        : scheme.secondary;
+
     return Card(
       child: ListTile(
         leading: CircleAvatar(
@@ -24,12 +38,7 @@ class ObservationTile extends StatelessWidget {
           maxLines: 2,
         ),
         isThreeLine: true,
-        trailing: StatBadge(
-          label: observation.status,
-          color: observation.status == 'Verified'
-              ? scheme.tertiary
-              : scheme.secondary,
-        ),
+        trailing: StatBadge(label: _statusLabel, color: color),
       ),
     );
   }

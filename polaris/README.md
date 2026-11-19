@@ -2,16 +2,31 @@
 
 Polaris is a Flutter astronomy companion for planning and recording observations.
 
-## Getting Started
+## Backend
 
-This project is a starting point for a Flutter application.
+The app talks to the Polaris microservices through the API Gateway:
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+cd ../polaris-microservices
+docker compose up --build -d
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+The gateway is available at `http://localhost:8080`.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Running the app
+
+```bash
+flutter pub get
+flutter run
+```
+
+Default API base URLs:
+
+- Android emulator: `http://10.0.2.2:8080`
+- Desktop/web/other platforms: `http://localhost:8080`
+
+For a physical Android device or another host, pass the machine IP explicitly:
+
+```bash
+flutter run --dart-define=POLARIS_API_BASE_URL=http://192.168.1.10:8080
+```
