@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+  namespace: polaris
+data:
+  traefik.yml: |
+    global:
+      checkNewVersion: false
+      sendAnonymousUsage: false
+    api:
+      dashboard: true
+      insecure: true
+    ping:
+      entryPoint: "web"
+    log:
+      level: INFO
+      format: json
+    accessLog:
+      format: json
+    entryPoints:
+      web:
+        address: ":80"
+      traefik:
+        address: ":8080"
+    providers:
+      file:
+        filename: "/etc/traefik/dynamic.yml"
+        watch: true
+
+  dynamic.yml: |
+    http:
+      routers:
+        auth:
+          rule: "PathPrefix(`/api/auth`)"
+          service: "auth-service"
+          entryPoints:
+            - "web"
+        catalog:
+          rule: "PathPrefix(`/api/catalog`)"
+          service: "catalog-service"
+          entryPoints:
+            - "web"
+        equipment:
+          rule: "PathPrefix(`/api/equipment`)"
+          service: "equipment-service"
+          entryPoints:
+            - "web"
+        observation:
+          rule: "PathPrefix(`/api/observations`)"
+          service: "observation-service"
+          entryPoints:
+            - "web"
+        quest:
+          rule: "PathPrefix(`/api/quests`)"
+          service: "quest-service"
+          entryPoints:
+            - "web"
+        verification:
+          rule: "PathPrefix(`/api/verification`)"
+          service: "verification-service"
+          entryPoints:
+            - "web"
+        weather:
+          rule: "PathPrefix(`/api/weather`)"
+          service: "weather-service"
+          entryPoints:
+            - "web"
+
+      services:
+        auth-service:
+          loadBalancer:
+            servers:
+              - url: "http://auth-service:8001"
+        catalog-service:
+          loadBalancer:
+            servers:
+              - url: "http://catalog-service:8002"
+        equipment-service:
+          loadBalancer:
+            servers:
+              - url: "http://equipment-service:8003"
+        observation-service:
+          loadBalancer:
+            servers:
+              - url: "http://observation-service:8004"
+        quest-service:
+          loadBalancer:
+            servers:
+              - url: "http://quest-service:8005"
+        verification-service:
+          loadBalancer:
+            servers:
+              - url: "http://verification-service:8006"
+        weather-service:
+          loadBalancer:
+            servers:
+              - url: "http://weather-service:8007"

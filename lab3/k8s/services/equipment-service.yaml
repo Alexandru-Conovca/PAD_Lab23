@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: equipment-service
+  namespace: polaris
+  labels:
+    app: equipment-service
+spec:
+  type: ClusterIP
+  selector:
+    app: equipment-service
+  ports:
+    - name: http
+      port: 8003
+      targetPort: 8003
