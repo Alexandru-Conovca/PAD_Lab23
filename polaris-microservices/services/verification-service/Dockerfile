@@ -1,4 +1,21 @@
-FROM python:3.11-slim
+# Stage 1: Build dependencies
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Stage 2: Minimal runtime image
+FROM python:3.11-slim AS runner
 
 WORKDIR /app
 
@@ -7,15 +24,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
+    libpq5 \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -u 10001 -m -s /bin/sh appuser
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=builder /install /usr/local
+COPY --chown=appuser:appuser . .
 
-COPY . .
+USER appuser
 
 EXPOSE 8006
 
