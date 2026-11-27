@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     service_name: str = "catalog-service"
     host: str = "0.0.0.0"
     port: int = 8002
-    database_url: str = "postgresql+psycopg2://postgres:postgres@postgres:5432/catalog_db"
+    database_url: str = "postgresql+psycopg://postgres:postgres@postgres:5432/catalog_db"
     jwt_secret: str = "super-secret-polaris-key-change-in-production-2026"
     jwt_algorithm: str = "HS256"
     log_level: str = "INFO"

@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     service_name: str = "verification-service"
     host: str = "0.0.0.0"
     port: int = 8006
-    database_url: str = "postgresql+psycopg2://postgres:postgres@postgres:5432/verification_db"
+    database_url: str = "postgresql+psycopg://postgres:postgres@postgres:5432/verification_db"
     rabbitmq_host: str = "rabbitmq"
     rabbitmq_port: int = 5672
     rabbitmq_user: str = "guest"
