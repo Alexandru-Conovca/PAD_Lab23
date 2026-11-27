@@ -1,0 +1,194 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  # -------------------------------------------------------------------------
+  # CI: unit/API tests for all 7 microservices against a real PostgreSQL
+  # -------------------------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { service: auth-service, db: auth_db, port: 8001 }
+          - { service: catalog-service, db: catalog_db, port: 8002 }
+          - { service: equipment-service, db: equipment_db, port: 8003 }
+          - { service: observation-service, db: observation_db, port: 8004 }
+          - { service: quest-service, db: quest_db, port: 8005 }
+          - { service: verification-service, db: verification_db, port: 8006 }
+          - { service: weather-service, db: weather_db, port: 8007 }
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Create service databases
+        run: |
+          for db in auth_db catalog_db equipment_db observation_db quest_db verification_db weather_db; do
+            docker run --rm --network host \
+              -e PGPASSWORD=postgres \
+              postgres:16-alpine \
+              psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE $db"
+          done
+
+      - name: Test lab2/${{ matrix.service }}
+        working-directory: lab2/services/${{ matrix.service }}
+        env:
+          DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/${{ matrix.db }}
+        run: |
+          pip install -r requirements.txt pytest
+          python -m pytest tests/ -v
+
+      - name: Test polaris-microservices/${{ matrix.service }}
+        working-directory: polaris-microservices/services/${{ matrix.service }}
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/${{ matrix.db }}
+        run: |
+          pip install -r requirements.txt pytest
+          python -m pytest tests/ -v
+
+  # -------------------------------------------------------------------------
+  # CI: build all Docker images used by the Kubernetes manifests (lab3)
+  # -------------------------------------------------------------------------
+  docker-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { service: auth-service, port: 8001 }
+          - { service: catalog-service, port: 8002 }
+          - { service: equipment-service, port: 8003 }
+          - { service: observation-service, port: 8004 }
+          - { service: quest-service, port: 8005 }
+          - { service: verification-service, port: 8006 }
+          - { service: weather-service, port: 8007 }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.service }} image
+        run: docker build -t polaris/${{ matrix.service }}:latest polaris-microservices/services/${{ matrix.service }}
+
+      - name: Smoke test image
+        run: |
+          docker run -d --name svc polaris/${{ matrix.service }}:latest
+          for i in $(seq 1 15); do
+            sleep 2
+            if docker exec svc python -c "import urllib.request;urllib.request.urlopen('http://localhost:${{ matrix.port }}/health',timeout=2)" 2>/dev/null; then
+              echo "Health check OK on port ${{ matrix.port }}"
+              docker rm -f svc
+              exit 0
+            fi
+          done
+          echo "Smoke test FAILED"; docker logs svc; docker rm -f svc; exit 1
+
+  # -------------------------------------------------------------------------
+  # CI: validate Kubernetes manifests (kustomize build + kubeconform)
+  # -------------------------------------------------------------------------
+  k8s-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.30.0"
+
+      - name: Render kustomize manifests
+        run: kubectl kustomize lab3/k8s > /tmp/rendered.yaml
+
+      - name: Validate manifests with kubeconform
+        run: |
+          docker run --rm -i \
+            -v /tmp/rendered.yaml:/tmp/rendered.yaml:ro \
+            ghcr.io/yannh/kubeconform:latest \
+            -summary /tmp/rendered.yaml
+
+  # -------------------------------------------------------------------------
+  # CD: on push to main, publish images to GitHub Container Registry
+  # -------------------------------------------------------------------------
+  push-images:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    needs: [test, docker-build, k8s-validate]
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - auth-service
+          - catalog-service
+          - equipment-service
+          - observation-service
+          - quest-service
+          - verification-service
+          - weather-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/polaris-${{ matrix.service }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: polaris-microservices/services/${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
